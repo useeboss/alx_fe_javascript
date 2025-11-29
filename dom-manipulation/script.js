@@ -10,6 +10,21 @@ const quoteDisplay = document.getElementById("quoteDisplay");
 const newQuoteBtn = document.getElementById("newQuote");
 const exportBtn = document.getElementById("exportJson");
 
+function notifyUser(message) {
+  const notification = document.createElement("div");
+  notification.innerText = message;
+  notification.style.background = "#f0f0f0";
+  notification.style.padding = "10px";
+  notification.style.marginTop = "10px";
+  notification.style.border = "1px solid #ccc";
+
+  document.body.appendChild(notification);
+
+  // Auto-remove after 5 seconds
+  setTimeout(() => notification.remove(), 5000);
+}
+
+
 // ====== Storage Helpers ======
 const LS_KEY = "dqg_quotes";
 const SS_KEY_LAST = "dqg_last_viewed";
@@ -180,6 +195,69 @@ function addQuote() {
     quoteDisplay.innerHTML = "<p style='color:red;'>Please enter both quote and category.</p>";
   }
 }
+
+const SERVER_URL = "https://jsonplaceholder.typicode.com/posts";
+
+// Simulate fetching quotes from server
+async function fetchQuotesFromServer() {
+  try {
+    const response = await fetch(SERVER_URL);
+    const data = await response.json();
+
+    // Map server data into quote format
+    const serverQuotes = data.slice(0, 5).map(item => ({
+      text: item.title,
+      category: "Server"
+    }));
+
+    return serverQuotes;
+  } catch (error) {
+    console.error("Error fetching from server:", error);
+    return [];
+  }
+}
+
+// Simulate posting new quote to server
+async function postQuoteToServer(quote) {
+  try {
+    const response = await fetch(SERVER_URL, {
+      method: "POST",
+      body: JSON.stringify(quote),
+      headers: { "Content-Type": "application/json" }
+    });
+    const result = await response.json();
+    console.log("Posted to server:", result);
+  } catch (error) {
+    console.error("Error posting to server:", error);
+  }
+}
+
+async function syncQuotes() {
+  const serverQuotes = await fetchQuotesFromServer();
+
+  // Conflict resolution: server overwrites duplicates
+  const mergedQuotes = [...quotes];
+
+  serverQuotes.forEach(serverQuote => {
+    const exists = mergedQuotes.some(q => q.text === serverQuote.text);
+    if (!exists) {
+      mergedQuotes.push(serverQuote);
+    } else {
+      // Replace local with server version
+      const index = mergedQuotes.findIndex(q => q.text === serverQuote.text);
+      mergedQuotes[index] = serverQuote;
+    }
+  });
+
+  quotes = mergedQuotes;
+  saveQuotes(); // persist to localStorage
+
+  // Notify user
+  notifyUser("Quotes synced with server. Conflicts resolved using server data.");
+}
+
+// Run sync every 30 seconds
+setInterval(syncQuotes, 30000);
 
 
 // ====== Init ======
