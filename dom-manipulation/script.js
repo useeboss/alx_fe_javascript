@@ -24,6 +24,28 @@ function notifyUser(message) {
   setTimeout(() => notification.remove(), 5000);
 }
 
+async function syncQuotes() {
+  const serverQuotes = await fetchQuotesFromServer();
+
+  // Merge logic (server wins conflicts)
+  const mergedQuotes = [...quotes];
+  serverQuotes.forEach(serverQuote => {
+    const exists = mergedQuotes.some(q => q.text === serverQuote.text);
+    if (!exists) {
+      mergedQuotes.push(serverQuote);
+    } else {
+      const index = mergedQuotes.findIndex(q => q.text === serverQuote.text);
+      mergedQuotes[index] = serverQuote;
+    }
+  });
+
+  quotes = mergedQuotes;
+  saveQuotes();
+
+  // Notify user
+  notifyUser("Quotes synced with server!");
+}
+
 
 // ====== Storage Helpers ======
 const LS_KEY = "dqg_quotes";
