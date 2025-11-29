@@ -21,6 +21,16 @@
     <button onclick="addQuote()">Add Quote</button>
   </div>
 
+  <!-- Export quotes to JSON -->
+<button id="exportJson">Export Quotes (JSON)</button>
+
+<!-- Import quotes from JSON -->
+<input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
+
+<!-- Optional: show last viewed quote (from session storage) -->
+<div id="lastViewed" style="margin-top:10px; font-size:0.9em; color:#555;"></div>
+
+
   <!-- Link to your JavaScript file -->
   <script src="script.js"></script>
 </body>
