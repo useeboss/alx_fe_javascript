@@ -110,10 +110,83 @@ function importFromJsonFile(event) {
   reader.readAsText(file);
 }
 
+// ====== Populate Categories Dynamically ======
+function populateCategories() {
+  const categoryFilter = document.getElementById("categoryFilter");
+
+  // Clear existing options except "All"
+  categoryFilter.innerHTML = '<option value="all">All Categories</option>';
+
+  // Extract unique categories
+  const categories = [...new Set(quotes.map(q => q.category))];
+
+  // Populate dropdown
+  categories.forEach(category => {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    categoryFilter.appendChild(option);
+  });
+
+  // Restore last selected filter from localStorage
+  const savedFilter = localStorage.getItem("dqg_selected_category");
+  if (savedFilter) {
+    categoryFilter.value = savedFilter;
+    filterQuotes(); // Apply saved filter immediately
+  }
+}
+
+// ====== Filter Quotes Based on Selected Category ======
+function filterQuotes() {
+  const categoryFilter = document.getElementById("categoryFilter");
+  const selectedCategory = categoryFilter.value;
+
+  // Save selected category to localStorage
+  localStorage.setItem("dqg_selected_category", selectedCategory);
+
+  // Filter quotes
+  let filteredQuotes = quotes;
+  if (selectedCategory !== "all") {
+    filteredQuotes = quotes.filter(q => q.category === selectedCategory);
+  }
+
+  // Display filtered quotes
+  if (filteredQuotes.length === 0) {
+    quoteDisplay.innerHTML = "<p>No quotes available for this category.</p>";
+    return;
+  }
+
+  // Show all filtered quotes (instead of random)
+  quoteDisplay.innerHTML = filteredQuotes
+    .map(q => `<p>"${q.text}" — <em>${q.category}</em></p>`)
+    .join("");
+}
+
+// ====== Update Add Quote to Refresh Categories ======
+function addQuote() {
+  const text = document.getElementById("newQuoteText").value.trim();
+  const category = document.getElementById("newQuoteCategory").value.trim();
+
+  if (text && category) {
+    quotes.push({ text, category });
+    saveQuotes(); // persist to localStorage
+    quoteDisplay.innerHTML = `<p>New quote added: "${text}" — <em>${category}</em></p>`;
+    document.getElementById("newQuoteText").value = "";
+    document.getElementById("newQuoteCategory").value = "";
+
+    // Refresh categories in dropdown
+    populateCategories();
+  } else {
+    quoteDisplay.innerHTML = "<p style='color:red;'>Please enter both quote and category.</p>";
+  }
+}
+
+
 // ====== Init ======
 (function init() {
   loadQuotes();
   loadLastViewed();
   newQuoteBtn.addEventListener("click", displayRandomQuote);
   exportBtn.addEventListener("click", exportToJson);
+  populateCategories(); // Populate categories on load
 })();
